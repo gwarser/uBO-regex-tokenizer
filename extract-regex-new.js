@@ -106,7 +106,7 @@ let badTokens = new Map([
 function extractTokenFromRegex(pattern) {
     let reRegexToken = /[%0-9A-Za-z]+/g;
     let reRegexTokenAbort = /[\(\)\[\]]/;
-    let reRegexBadPrefix = /(^|[^\\]\.|\\[%SDWsdw]|[()*+?[\\\]{}])$/;
+    let reRegexBadPrefix = /(^|[^\\]\.|\\[%SDWsdw]|[^\\][()*+?[\\\]{}])$/;
     let reRegexBadSuffix = /^([^\\]\.|\\[%SDWsdw]|[()*+?[\]{}]|$)/;
     let maxTokenLen = 7;
 
