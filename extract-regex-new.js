@@ -1,4 +1,4 @@
-// after uBO 1.31.9 https://github.com/gorhill/uBlock/commit/0bbf5b52abfa58fbd0cb505063011b57409aada1
+// after uBO 1.31.1b6 https://github.com/gorhill/uBlock/commit/6ac09a28560ebe7de6c20841b5ffb024fe97442d#diff-5dbe5f13c0ecb375ea4a9cabf76c9bf598b364eeb21666040482f8eeaa7cb1f1R3163-R3208
 
 let badTokens = new Map([
     ['https', 123617],
@@ -103,29 +103,30 @@ let badTokens = new Map([
     ['new', 1412],
 ]);
 
-function extractTokenFromRegex(pattern) {
-    let reRegexToken = /[%0-9A-Za-z]+/g;
+function extractTokenFromRegex(s) {
+    let reToken = /[%0-9A-Za-z]+/g;
     let reRegexTokenAbort = /[\(\)\[\]]/;
     let reRegexBadPrefix = /(^|[^\\]\.|\\[%SDWsdw]|[^\\][()*+?[\\\]{}])$/;
     let reRegexBadSuffix = /^([^\\]\.|\\[%SDWsdw]|[()*+?[\]{}]|$)/;
     let maxTokenLen = 7;
 
-    reRegexToken.lastIndex = 0;
-    const s = pattern;
-    let bestBadness = 0;
-    for (; ;) {
-        const matches = reRegexToken.exec(s);
+    reToken.lastIndex = 0;
+    const pattern = s;
+    let bestToken;
+    let bestBadness = 0x7FFFFFFF;
+    for (;;) {
+        const matches = reToken.exec(pattern);
         if (matches === null) { break; }
         let token = matches[0];
-        let prefix = s.slice(0, matches.index);
-        let suffix = s.slice(reRegexToken.lastIndex);
+        let prefix = pattern.slice(0, matches.index);
+        let suffix = pattern.slice(reToken.lastIndex);
         if (
             reRegexTokenAbort.test(prefix) &&
             reRegexTokenAbort.test(suffix)
         ) {
             continue;
         }
-        if (token.startsWith('b')) {
+        if ( token.charCodeAt(0) === 0x62 /* 'b' */ ) {
             const match = /\\+$/.exec(prefix);
             if (match !== null && (match[0].length & 1) !== 0) {
                 prefix += 'b';
@@ -143,11 +144,16 @@ function extractTokenFromRegex(pattern) {
         const badness = token.length > 1
             ? badTokens.get(token) || 0
             : 1;
-        if (bestBadness === 0 || badness < bestBadness) {
-            token = token.toLowerCase();
-            if (badness === 0) { return token; }
+        if (badness < bestBadness) {
+            bestToken = token;
+            if (badness === 0) { break; }
             bestBadness = badness;
         }
+    }
+    if ( bestToken !== undefined ) {
+        token = bestToken.toLowerCase();
+        // tokenHash = urlTokenizer.tokenHashFromString(token);
+        return token;
     }
 }
 
@@ -156,5 +162,3 @@ let t = document.getElementById('target');
 r.addEventListener('keyup', () => {
     t.textContent = extractTokenFromRegex(regex.value) || '';
 })
-
-
